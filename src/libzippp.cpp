@@ -32,12 +32,13 @@
   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <errno.h>
-#include <zip.h>
+#include "libzippp.h"
+
 #include <fstream>
+#include <iostream>
 #include <memory>
 
-#include "libzippp.h"
+#include <errno.h>
 
 using namespace libzippp;
 using namespace std;
@@ -550,6 +551,18 @@ int ZipArchive::renameEntry(const string& e, const string& newName) const {
   return renameEntry(entry, newName);
 }
 
+zip_int64_t ZipArchive::addFile(const std::string& name, zip_source* source,
+                                zip_flags_t flags) const {
+  auto index = zip_file_add(zipHandle, name.c_str(), source, flags);
+  if (!password.empty()) {
+    if (0 != zip_file_set_encryption(zipHandle, index, ZIP_EM_AES_256, password.c_str())) {
+      std::cerr << "Failed to set zip password: " << zip_strerror(zipHandle) << std::endl;
+      index = -1;
+    }
+  }
+  return index;
+}
+
 bool ZipArchive::addFile(const string& entryName, const string& file) const {
   if (!isOpen()) {
     return false;
@@ -579,7 +592,7 @@ bool ZipArchive::addFile(const string& entryName, const string& file) const {
 
   zip_source* source = zip_source_file(zipHandle, filepath, 0, end);
   if (source != NULL) {
-    libzippp_int64 result = zip_file_add(zipHandle, entryName.c_str(), source, ZIP_FL_OVERWRITE);
+    libzippp_int64 result = addFile(entryName, source);
     if (result >= 0) {
       return true;
     } else {
@@ -614,7 +627,7 @@ bool ZipArchive::addData(const string& entryName, const void* data, libzippp_uin
 
   zip_source* source = zip_source_buffer(zipHandle, data, length, freeData);
   if (source != NULL) {
-    libzippp_int64 result = zip_file_add(zipHandle, entryName.c_str(), source, ZIP_FL_OVERWRITE);
+    libzippp_int64 result = addFile(entryName, source);
     if (result >= 0) {
       return true;
     } else {

@@ -1,6 +1,8 @@
 #ifndef LIBZIPPP_H
 #define LIBZIPPP_H
 
+#include <zip.h>
+
 /*
   libzippp.h -- exported declarations.
   Copyright (C) 2013 Cédric Tabin
@@ -38,9 +40,6 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-
-// defined in libzip
-struct zip;
 
 #define ENTRY_PATH_SEPARATOR '/'
 #define ENTRY_IS_DIRECTORY(str) \
@@ -385,6 +384,9 @@ class LIBZIPPP_API ZipArchive {
 
   // generic method to create ZipEntry
   ZipEntry createEntry(struct zip_stat* stat) const;
+
+  zip_int64_t addFile(const std::string& name, zip_source* source,
+                      zip_flags_t flags = ZIP_FL_OVERWRITE) const;
 
   // prevent copy across functions
   ZipArchive(const ZipArchive& zf);
